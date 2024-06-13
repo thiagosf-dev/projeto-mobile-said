@@ -334,6 +334,7 @@ export function Schedule() {
                       <Input
                         errorMessage={errors.hour?.message}
                         keyboardType={"numeric"}
+                        maxLength={2}
                         value={value}
                         w={60}
                         onChangeText={onChange}
