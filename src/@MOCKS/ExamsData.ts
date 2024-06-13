@@ -1,3 +1,5 @@
+import { IUserData } from "./LoginData";
+
 export interface IExamType {
   name: "Ocupacional" | "Outros";
 }
@@ -8,48 +10,42 @@ export const TYPES_LIST: IExamType[] = [
 ];
 
 export interface IOcupacionalList {
-  name: "Adimissional" | "Periódico" | "Retorno ao trabalho" | "Demissional";
+  name:
+    | "Ácido Metil-Hipúrico"
+    | "Consulta Ocupacional"
+    | "Glicose/Glicemia"
+    | "Hemograma Completo"
+    | "Mercúrio urinário";
   selected: boolean;
 }
 
 export const OCUPACIONAL_LIST: IOcupacionalList[] = [
-  { name: "Adimissional", selected: false },
-  { name: "Demissional", selected: false },
-  { name: "Periódico", selected: false },
-  { name: "Retorno ao trabalho", selected: false },
+  { name: "Ácido Metil-Hipúrico", selected: false },
+  { name: "Consulta Ocupacional", selected: false },
+  { name: "Glicose/Glicemia", selected: false },
+  { name: "Hemograma Completo", selected: false },
+  { name: "Mercúrio urinário", selected: false },
 ];
 
 export interface IOutrosList {
-  name: "Outro 1" | "Outro 2" | "Outro 3";
+  name: "Eletrocardiograma" | "Mamografia" | "Raio-X" | "Ultrassonografia";
   selected: boolean;
 }
 
 export const OUTROS_LIST: IOutrosList[] = [
-  { name: "Outro 1", selected: false },
-  { name: "Outro 2", selected: false },
-  { name: "Outro 3", selected: false },
+  { name: "Eletrocardiograma", selected: false },
+  { name: "Mamografia", selected: false },
+  { name: "Raio-X", selected: false },
+  { name: "Ultrassonografia", selected: false },
 ];
 
 export interface IExamData {
   exam: IOcupacionalList[] | IOutrosList[];
-  name: string;
   type: IExamType;
-  data: string;
+  dia: string;
+  mes: string;
   hour: string;
+  user: IUserData;
 }
 
-export interface IExamsData {
-  exams: IExamData[];
-}
-
-export const EXAMS_DATA: IExamsData = {
-  exams: [
-    {
-      exam: [],
-      data: "01-01-2025",
-      hour: "12:00",
-      name: "Exame 01",
-      type: { name: "Ocupacional" },
-    },
-  ],
-};
+export let EXAMS_DATA: IExamData[] = [];

@@ -9,7 +9,7 @@ import ScheduleSvg from "@assets/schedule.svg";
 import { Schedule } from "@screens/Schedule";
 import { useTheme } from "native-base";
 import { Platform } from "react-native";
-import { AuthNavigatorRoutesProps } from "./auth.routes";
+import { AuthRoutes } from "./auth.routes";
 
 type AppRoutes = {
   exercise: undefined;
@@ -17,9 +17,10 @@ type AppRoutes = {
   home: undefined;
   profile: undefined;
   schedule: undefined;
+  RootApp: undefined;
 };
 
-export type AppNavigatorRoutesProps = AuthNavigatorRoutesProps &
+export type AppNavigatorRoutesProps = AppRoutes &
   BottomTabNavigationProp<AppRoutes>;
 
 const { Navigator, Screen } = createBottomTabNavigator<AppRoutes>();
@@ -63,6 +64,12 @@ export function AppRoutes() {
             <ScheduleSvg fill={color} height={iconSize} width={iconSize} />
           ),
         }}
+      />
+
+      <Screen
+        name="RootApp"
+        component={AuthRoutes}
+        options={{ headerShown: false }}
       />
 
       {/* <Screen

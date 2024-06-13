@@ -1,50 +1,39 @@
-import { Entypo } from "@expo/vector-icons";
-import { Heading, HStack, Icon, Text, VStack } from "native-base";
-import { TouchableOpacity, TouchableOpacityProps } from "react-native";
+import { Heading, HStack, Text, VStack } from "native-base";
+import { TouchableOpacityProps } from "react-native";
 import { IExamData } from "src/@MOCKS/ExamsData";
+import { IUserData } from "src/@MOCKS/LoginData";
 
 type Props = TouchableOpacityProps & {
   exam: IExamData;
+  user: IUserData;
 };
 
-export function ExamsCard({ exam, ...rest }: Props) {
+export function ExamsCard({ exam, user }: Props) {
   return (
-    <HStack
-      alignItems={"center"}
+    <VStack
       bg={"gray.500"}
       mb={3}
       p={4}
       rounded={"lg"}
       justifyContent={"space-around"}
     >
-      <VStack flex={1}>
+      <HStack flex={1} justifyContent={"space-around"} alignItems={"center"}>
         <Heading color={"white"} fontFamily={"heading"} fontSize={"lg"}>
-          {exam.name}
+          DIA: {exam.dia}/{exam.mes}
         </Heading>
-        <Text color={"gray.200"} fontSize={"sm"} mt={1} numberOfLines={2}>
-          {exam.type.name}
-        </Text>
-      </VStack>
+        <Heading color={"white"} fontFamily={"heading"} fontSize={"lg"}>
+          ÀS: {exam.hour}:00h
+        </Heading>
+      </HStack>
 
-      <VStack flex={1}>
-        <Heading
-          color={"white"}
-          fontFamily={"heading"}
-          fontSize={"sm"}
-          textAlign={"right"}
-        >
-          {exam.data}
-        </Heading>
-        <Text
-          color={"gray.200"}
-          fontSize={"sm"}
-          mt={1}
-          numberOfLines={2}
-          textAlign={"right"}
-        >
-          {exam.hour}
-        </Text>
-      </VStack>
-    </HStack>
+      {exam.exam.length &&
+        exam.exam.map((exam) => (
+          <VStack flex={1} key={exam.name}>
+            <Text color={"gray.200"} fontSize={"sm"} mt={1}>
+              {exam.name}
+            </Text>
+          </VStack>
+        ))}
+    </VStack>
   );
 }

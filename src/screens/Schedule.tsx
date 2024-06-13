@@ -1,10 +1,28 @@
+import { Button } from "@components/Button";
 import { Group } from "@components/Group";
+import { Input } from "@components/Input";
 import { ScreenHeader } from "@components/ScreenHeader";
+import { yupResolver } from "@hookform/resolvers/yup";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
-import { Box, Divider, FlatList, HStack, VStack } from "native-base";
-import { useState } from "react";
 import {
+  Box,
+  Center,
+  Divider,
+  FlatList,
+  Heading,
+  HStack,
+  Text,
+  useToast,
+  VStack,
+} from "native-base";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { Alert, Keyboard } from "react-native";
+import {
+  EXAMS_DATA,
+  IExamData,
   IExamType,
   IOcupacionalList,
   IOutrosList,
@@ -12,8 +30,26 @@ import {
   OUTROS_LIST,
   TYPES_LIST,
 } from "src/@MOCKS/ExamsData";
+import { IUserData } from "src/@MOCKS/LoginData";
+import * as yup from "yup";
+
+type FormDataProps = {
+  dia: string;
+  mes: string;
+  hour: string;
+};
+
+const SignUpSchema = yup.object({
+  dia: yup.string().required("O campo Dia deve ser preenchido"),
+  mes: yup.string().required("O campo Mês deve ser preenchido"),
+  hour: yup.string().required("O campo Hora deve ser preenchido"),
+});
 
 export function Schedule() {
+  const [userLogged, setUserLogged] = useState<IUserData | null>(
+    {} as IUserData
+  );
+
   const [examsSelected, setExamsSeclected] = useState<
     IOcupacionalList[] | IOutrosList[]
   >([] as IOcupacionalList[] | IOutrosList[]);
@@ -25,6 +61,21 @@ export function Schedule() {
   const [selecteds, setSelecteds] = useState<string[]>([]);
 
   const { navigate } = useNavigation<AppNavigatorRoutesProps>();
+
+  const toast = useToast();
+
+  const {
+    control,
+    formState: { errors, isValid },
+    handleSubmit,
+  } = useForm<FormDataProps>({
+    resolver: yupResolver(SignUpSchema),
+    defaultValues: {
+      dia: "",
+      mes: "",
+      hour: "",
+    },
+  });
 
   function handleSelectGroup(groupSelected: IExamType) {
     setGroupSelected(groupSelected);
@@ -58,117 +109,267 @@ export function Schedule() {
     });
   }
 
-  function handleOpenExerciseDetails() {
-    navigate("exercise");
+  function handleScheduling(info: FormDataProps) {
+    Keyboard.dismiss();
+
+    Alert.alert(
+      "Confirmar pagamento",
+      "Ao confirmar o pagamento, todos os exames selecionados serão agendados para a data e a hora informados",
+      [
+        {
+          isPreferred: true,
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Confirmar",
+          onPress: () => {
+            executeScheduling(info);
+          },
+          style: "destructive",
+        },
+      ],
+      {
+        cancelable: true,
+        userInterfaceStyle: "dark",
+      }
+    );
   }
 
+  async function executeScheduling({ dia, hour, mes }: FormDataProps) {
+    const examsScheduling: IExamData = {
+      dia,
+      mes,
+      hour,
+      exam: examsSelected,
+      type: groupSelected,
+      user: userLogged as IUserData,
+    };
+
+    EXAMS_DATA.push(examsScheduling);
+
+    const storage = await AsyncStorage.getItem("exams");
+    const exams: IExamData[] = storage ? JSON.parse(storage) : [];
+    const newStorage: string = JSON.stringify([...exams, examsScheduling]);
+    await AsyncStorage.setItem("exams", newStorage);
+
+    navigate("home");
+  }
+
+  function handleHomeNavigate() {
+    navigate("home");
+  }
+
+  async function verifyUserLogged() {
+    const storage = await AsyncStorage.getItem("userLoged");
+    setUserLogged(JSON.parse(storage as string) ?? null);
+  }
+
+  useEffect(() => {
+    verifyUserLogged();
+  }, []);
+
   return (
-    <VStack flex={1}>
+    <VStack justifyContent={"space-between"} flex={1}>
       <ScreenHeader title={"Seleção de Exames"} />
 
-      <Divider bg={"green.400"} mb={5} />
-
-      <FlatList
-        data={TYPES_LIST}
-        horizontal
-        keyExtractor={(item) => item.name}
-        maxH={20}
-        renderItem={({ item }) => (
-          <Group
-            isActive={groupSelected.name === item.name}
-            name={item.name}
-            onPress={() => handleSelectGroup(item)}
-          />
-        )}
-        showsHorizontalScrollIndicator={false}
-        _contentContainerStyle={{
-          alignItems: "center",
-          flex: 1,
-          flexDir: "row",
-          justifyContent: "center",
-          px: 8,
-        }}
-      />
-
-      {groupSelected.name === "Ocupacional" && (
-        <>
-          <Divider alignSelf={"center"} bg={"green.400"} my={5} w={100} />
-
-          {OCUPACIONAL_LIST.map((item) => (
-            <Box key={item.name} px={8}>
-              <Group
-                isActive={selecteds.includes(item.name)}
-                name={item.name}
-                onPress={() => handleSelectExam(item)}
-                h={12}
-                px={4}
-              />
-            </Box>
-          ))}
-        </>
-      )}
-
-      {groupSelected.name === "Outros" && (
-        <>
-          <Divider alignSelf={"center"} bg={"green.400"} my={5} w={100} />
-
-          {OUTROS_LIST.map((item) => (
-            <HStack key={item.name} justifyContent={"center"} px={8}>
-              <Group
-                isActive={selecteds.includes(item.name)}
-                name={item.name}
-                onPress={() => handleSelectExam(item)}
-                h={12}
-                px={4}
-              />
-            </HStack>
-          ))}
-        </>
-      )}
-
-      {/* <FlatList
-        data={groups.}
-        horizontal
-        keyExtractor={(item) => item.name}
-        maxH={10}
-        minH={10}
-        my={5}
-        renderItem={({ item }) => (
-          <Group
-            isActive={groupSelected === item.name}
-            name={item}
-            onPress={() => setGroupSelected(item)}
-          />
-        )}
-        showsHorizontalScrollIndicator={false}
-        _contentContainerStyle={{
-          px: 8,
-        }}
-      /> */}
-
-      <Divider alignSelf={"center"} bg={"green.400"} my={8} w={100} />
-
-      {/* <VStack flex={1} px={8}>
-        <HStack alignItems={"center"} justifyContent={"space-between"} mb={5}>
-          <Heading color={"gray.200"} fontFamily={"heading"} fontSize={"md"}>
-            Exercícios
-          </Heading>
-
-          <Text color={"gray.200"} fontSize={"sm"}>
-            {exercises.length}
-          </Text>
-        </HStack>
+      <VStack flex={1}>
+        <Divider bg={"green.400"} />
 
         <FlatList
-          data={exercises}
-          keyExtractor={(item) => item}
+          flex={1}
+          data={TYPES_LIST}
+          horizontal
+          keyExtractor={(item) => item.name}
+          maxH={20}
+          minH={20}
           renderItem={({ item }) => (
-            <ExerciseCard onPress={handleOpenExerciseDetails} />
+            <Group
+              isActive={groupSelected.name === item.name}
+              name={item.name}
+              onPress={() => handleSelectGroup(item)}
+            />
           )}
-          showsVerticalScrollIndicator={false}
-          _contentContainerStyle={{ pb: 10 }}
+          showsHorizontalScrollIndicator={false}
+          _contentContainerStyle={{
+            alignItems: "center",
+            flex: 1,
+            flexDir: "row",
+            justifyContent: "center",
+            px: 8,
+          }}
         />
-      </VStack> */}
+
+        {groupSelected.name === "Ocupacional" && (
+          <>
+            <Divider alignSelf={"center"} bg={"green.400"} w={100} mb={2} />
+
+            <HStack
+              maxH={80}
+              minH={20}
+              alignItems={"center"}
+              flexWrap={"wrap"}
+              justifyContent={"center"}
+              px={8}
+            >
+              {OCUPACIONAL_LIST.map((item) => (
+                <Group
+                  key={item.name}
+                  isActive={selecteds.includes(item.name)}
+                  name={item.name}
+                  onPress={() => handleSelectExam(item)}
+                  h={12}
+                  px={4}
+                />
+              ))}
+            </HStack>
+          </>
+        )}
+
+        {groupSelected.name === "Outros" && (
+          <>
+            <Divider alignSelf={"center"} bg={"green.400"} w={100} mb={2} />
+
+            <HStack
+              alignItems={"center"}
+              flexWrap={"wrap"}
+              justifyContent={"center"}
+              px={8}
+            >
+              {OUTROS_LIST.map((item) => (
+                <Group
+                  key={item.name}
+                  isActive={selecteds.includes(item.name)}
+                  name={item.name}
+                  onPress={() => handleSelectExam(item)}
+                  h={12}
+                  px={4}
+                />
+              ))}
+            </HStack>
+          </>
+        )}
+
+        <Divider alignSelf={"center"} bg={"green.400"} w={100} my={2} />
+
+        {examsSelected.length > 0 && (
+          <VStack mt={5}>
+            <Center mb={5}>
+              <Heading
+                color={"gray.100"}
+                fontFamily={"heading"}
+                fontSize={"md"}
+                mb={1}
+              >
+                Informações do Agendamento
+              </Heading>
+            </Center>
+
+            <HStack justifyContent={"space-evenly"} mb={40}>
+              <Box>
+                <Controller
+                  name={"dia"}
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <Text
+                        color={"gray.300"}
+                        fontFamily={"heading"}
+                        fontSize={"md"}
+                      >
+                        DIA:
+                      </Text>
+                      <Input
+                        errorMessage={errors.dia?.message}
+                        keyboardType={"numeric"}
+                        maxLength={2}
+                        value={value}
+                        w={60}
+                        onChangeText={onChange}
+                      />
+                    </>
+                  )}
+                />
+              </Box>
+
+              <Box>
+                <Controller
+                  name={"mes"}
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <Text
+                        color={"gray.300"}
+                        fontFamily={"heading"}
+                        fontSize={"md"}
+                      >
+                        MÊS:
+                      </Text>
+                      <Input
+                        errorMessage={errors.mes?.message}
+                        keyboardType={"numeric"}
+                        maxLength={2}
+                        value={value}
+                        w={60}
+                        onChangeText={onChange}
+                      />
+                    </>
+                  )}
+                />
+              </Box>
+
+              <Box>
+                <Controller
+                  name={"hour"}
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <>
+                      <Text
+                        color={"gray.300"}
+                        fontFamily={"heading"}
+                        fontSize={"md"}
+                      >
+                        HORA:
+                      </Text>
+                      <Input
+                        errorMessage={errors.hour?.message}
+                        keyboardType={"numeric"}
+                        value={value}
+                        w={60}
+                        onChangeText={onChange}
+                      />
+                    </>
+                  )}
+                />
+              </Box>
+            </HStack>
+          </VStack>
+        )}
+      </VStack>
+
+      <Box p={2}>
+        {isValid && (
+          <Button
+            bg={"green.700"}
+            disabled={!isValid}
+            h={14}
+            mb={5}
+            title={"REALIZAR PAGAMENTO"}
+            variant={"solid"}
+            w={"full"}
+            onPress={handleSubmit(handleScheduling)}
+          />
+        )}
+
+        <Button
+          bg={"red.900"}
+          h={14}
+          title={"VOLTAR"}
+          variant={"solid"}
+          w={"full"}
+          onPress={handleHomeNavigate}
+        />
+      </Box>
     </VStack>
   );
 }

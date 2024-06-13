@@ -1,11 +1,12 @@
 import { Button } from "@components/Button";
 import { Input } from "@components/Input";
 import { yupResolver } from "@hookform/resolvers/yup";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { AuthNavigatorRoutesProps } from "@routes/auth.routes";
 import { Center, Heading, ScrollView, useToast, VStack } from "native-base";
 import { Controller, useForm } from "react-hook-form";
-import { LOGIN_DATA } from "src/@MOCKS/LoginData";
+import { IUserData } from "src/@MOCKS/LoginData";
 import * as yup from "yup";
 
 type FormDataProps = {
@@ -24,7 +25,7 @@ const SignUpSchema = yup.object({
   password: yup
     .string()
     .required("O campo Senha deve ser preenchido")
-    .min(6, "A Senha deve ter ao menos 6 caracteres"),
+    .min(3, "A Senha deve ter ao menos 3 caracteres"),
   password_confirm: yup
     .string()
     .required("O campo Confirmar Senha deve ser preenchido")
@@ -54,13 +55,17 @@ export function SignUp() {
     navigate("signIn");
   }
 
-  function handleSignUp({
-    email,
-    name,
-    password,
-    password_confirm,
-  }: FormDataProps) {
-    const user = LOGIN_DATA.users.find((user) => user.email === email);
+  async function handleSignUp({ email, name, password }: FormDataProps) {
+    const userLoged: IUserData = {
+      email,
+      name,
+      password,
+    };
+
+    const storage = await AsyncStorage.getItem("users");
+    const users: IUserData[] = storage ? JSON.parse(storage) : [];
+
+    const user = users.find((user) => user.email === email);
 
     if (user) {
       return toast.show({
@@ -70,13 +75,20 @@ export function SignUp() {
       });
     }
 
-    LOGIN_DATA.userLogged = {
-      name,
-      email,
-      password,
-    };
+    const newStorage: string = JSON.stringify(
+      users.length > 0 ? [...users, userLoged] : [userLoged]
+    );
+    await AsyncStorage.setItem("users", newStorage);
 
-    LOGIN_DATA.hasUserLogged = true;
+    const loged: string = JSON.stringify(user);
+    await AsyncStorage.setItem("userLoged", JSON.stringify(userLoged));
+
+    navigate("home");
+  }
+
+  async function handleZerar() {
+    await AsyncStorage.removeItem("users");
+    await AsyncStorage.removeItem("exams");
   }
 
   return (
@@ -169,6 +181,7 @@ export function SignUp() {
           variant="outline"
           onPress={handleLogin}
         />
+        <Button mt={12} title="ZERAR" variant="outline" onPress={handleZerar} />
       </VStack>
     </ScrollView>
   );

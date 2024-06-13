@@ -7,15 +7,16 @@ import {
   VStack,
 } from "native-base";
 
-import LogoSVG from "@assets/logo.svg";
 import { Button } from "@components/Button";
 import { Input } from "@components/Input";
 import { yupResolver } from "@hookform/resolvers/yup";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { AppNavigatorRoutesProps } from "@routes/app.routes";
+import { AuthNavigatorRoutesProps } from "@routes/auth.routes";
 import { Controller, useForm } from "react-hook-form";
-import { LOGIN_DATA } from "src/@MOCKS/LoginData";
+import { IUserData } from "src/@MOCKS/LoginData";
 import * as yup from "yup";
+import { useEffect } from "react";
 
 type FormDataProps = {
   email: string;
@@ -35,12 +36,13 @@ const SignUpSchema = yup.object({
 
 export function SignIn() {
   const toast = useToast();
-  const { navigate } = useNavigation<AppNavigatorRoutesProps>();
+  const { navigate } = useNavigation<AuthNavigatorRoutesProps>();
 
   const {
     control,
     formState: { errors, isSubmitting, isValidating },
     handleSubmit,
+    resetField,
   } = useForm<FormDataProps>({
     resolver: yupResolver(SignUpSchema),
     defaultValues: {
@@ -50,29 +52,39 @@ export function SignIn() {
   });
 
   function handleNewAccount() {
-    navigate("home");
+    navigate("signUp");
   }
 
-  function handleSignIn({ email, password }: FormDataProps) {
-    const user = LOGIN_DATA.users.find(
+  async function handleSignIn({ email, password }: FormDataProps) {
+    await AsyncStorage.removeItem("userLoged");
+
+    const storage = await AsyncStorage.getItem("users");
+    const users: IUserData[] = storage ? JSON.parse(storage) : [];
+
+    if (!users) {
+      return toast.show({
+        bg: "red.500",
+        placement: "top",
+        title: "Usuário/Senha inválido(s).",
+      });
+    }
+
+    const user = users.find(
       (user) => user.email === email && user.password === password
     );
 
-    if (user) {
-      LOGIN_DATA.hasUserLogged = true;
-      LOGIN_DATA.userLogged = {
-        email,
-        name: user.name,
-        password,
-      };
-      return navigate("home");
+    if (!user) {
+      return toast.show({
+        bg: "red.500",
+        placement: "top",
+        title: "Usuário/Senha inválido(s).",
+      });
     }
 
-    return toast.show({
-      bg: "red.500",
-      placement: "top",
-      title: "Usuário/Senha inválido(s).",
-    });
+    const userLoged: string = JSON.stringify(user);
+    await AsyncStorage.setItem("userLoged", userLoged);
+
+    navigate("home");
   }
 
   return (
@@ -81,9 +93,7 @@ export function SignIn() {
       showsVerticalScrollIndicator={false}
     >
       <VStack flex={1} pb={16} px={10}>
-        <Center my={10}>
-          <LogoSVG scaleX={0.5} scaleY={0.5} />
-
+        <Center my={40}>
           <Text
             color={"green.500"}
             fontFamily={"heading"}
